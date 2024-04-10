@@ -3,28 +3,34 @@ import pickle
 import time
 from plyer import notification
 
+#mark task characteristics
 class Task:
     def __init__(self, name, due_date, completed=False, urgent=False):
         self.name = name
         self.due_date = due_date
         self.completed = completed
         self.urgent = urgent
-    
+
+    #allow a task to be complete or incomplete
     def mark_complete(self):
         self.completed = True
     
     def mark_incomplete(self):
         self.completed = False
-    
+
+    #mark a task as urgent
     def mark_urgent(self):
         self.urgent = True
-    
+
+    #mark a tasks overdue point
     def is_overdue(self):
         return datetime.datetime.now() > self.due_date
-    
+
+    #before a task goes overdue for reminders
     def is_about_to_become_overdue(self, days_before=1):
         return (self.due_date - datetime.datetime.now()).days <= days_before
-    
+
+#keep tasks stored
 def save_tasks(tasks, filename='tasks.pickle'):
     with open(filename, 'wb') as f:
         pickle.dump(tasks, f)
@@ -46,12 +52,14 @@ def send_notification(title, message):
 
 def main():
     tasks = load_tasks()
-    
+
+    #menu choices
     while True:
         print("\n1. Add Task\n2. Mark Task as Complete\n3. Mark Task as Incomplete\n4. Mark Task as Urgent")
         print("5. Show Overdue Tasks\n6. Show Tasks About to Become Overdue\n7. Show All Tasks\n8. Exit")
         choice = input("Enter your choice: ")
-        
+
+        #add task
         if choice == '1':
             name = input("Enter task name: ")
             due_date_str = input("Enter due date (YYYY-MM-DD): ")
@@ -60,7 +68,8 @@ def main():
             tasks.append(task)
             save_tasks(tasks)
             print("Task added successfully.")
-        
+
+        #task complete
         elif choice == '2':
             for i, task in enumerate(tasks, start=1):
                 print(f"{i}. {task.name} - Due: {task.due_date} - {'Completed' if task.completed else 'Incomplete'}")
@@ -68,7 +77,8 @@ def main():
             tasks[index].mark_complete()
             save_tasks(tasks)
             print("Task marked as complete.")
-        
+
+        #task incomplete
         elif choice == '3':
             for i, task in enumerate(tasks, start=1):
                 print(f"{i}. {task.name} - Due: {task.due_date} - {'Completed' if task.completed else 'Incomplete'}")
@@ -76,7 +86,8 @@ def main():
             tasks[index].mark_incomplete()
             save_tasks(tasks)
             print("Task marked as incomplete.")
-        
+
+        #mark as urgent
         elif choice == '4':
             for i, task in enumerate(tasks, start=1):
                 print(f"{i}. {task.name} - Due: {task.due_date} - {'Urgent' if task.urgent else 'Not Urgent'}")
@@ -84,7 +95,8 @@ def main():
             tasks[index].mark_urgent()
             save_tasks(tasks)
             print("Task marked as urgent.")
-        
+
+        #show overdue tasks
         elif choice == '5':
             overdue_tasks = [task for task in tasks if task.is_overdue()]
             if overdue_tasks:
@@ -93,7 +105,8 @@ def main():
                     print(f"- {task.name} - Due: {task.due_date}")
             else:
                 print("No overdue tasks.")
-        
+
+        #show tasks about to be overdue
         elif choice == '6':
             days_before = int(input("Enter the number of days before the due date: "))
             tasks_about_to_become_overdue = [task for task in tasks if task.is_about_to_become_overdue(days_before)]
@@ -103,16 +116,19 @@ def main():
                     print(f"- {task.name} - Due: {task.due_date}")
             else:
                 print("No tasks are about to become overdue.")
-        
+
+        #list tasks
         elif choice == '7':
             print("All Tasks:")
             for i, task in enumerate(tasks, start=1):
                 print(f"{i}. {task.name} - Due: {task.due_date} - {'Completed' if task.completed else 'Incomplete'} - {'Urgent' if task.urgent else 'Not Urgent'}")
-        
+
+        #close and exit program (kill switch)
         elif choice == '8':
             print("Exiting...")
             break
-        
+
+        #make sure choice is valid
         else:
             print("Invalid choice. Please enter a number from 1 to 8.")
 
