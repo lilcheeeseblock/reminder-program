@@ -1,0 +1,133 @@
+import datetime
+import pickle
+import time
+from plyer import notification
+
+class Task:
+    def __init__(self, name, due_date, completed=False, urgent=False):
+        self.name = name
+        self.due_date = due_date
+        self.completed = completed
+        self.urgent = urgent
+    
+    def mark_complete(self):
+        self.completed = True
+    
+    def mark_incomplete(self):
+        self.completed = False
+    
+    def mark_urgent(self):
+        self.urgent = True
+    
+    def is_overdue(self):
+        return datetime.datetime.now() > self.due_date
+    
+    def is_about_to_become_overdue(self, days_before=1):
+        return (self.due_date - datetime.datetime.now()).days <= days_before
+    
+def save_tasks(tasks, filename='tasks.pickle'):
+    with open(filename, 'wb') as f:
+        pickle.dump(tasks, f)
+
+def load_tasks(filename='tasks.pickle'):
+    try:
+        with open(filename, 'rb') as f:
+            tasks = pickle.load(f)
+    except FileNotFoundError:
+        tasks = []
+    return tasks
+
+def send_notification(title, message):
+    notification.notify(
+        title=title,
+        message=message,
+        timeout=10  # Notification will disappear after 10 seconds
+    )
+
+def main():
+    tasks = load_tasks()
+    
+    while True:
+        print("\n1. Add Task\n2. Mark Task as Complete\n3. Mark Task as Incomplete\n4. Mark Task as Urgent")
+        print("5. Show Overdue Tasks\n6. Show Tasks About to Become Overdue\n7. Show All Tasks\n8. Exit")
+        choice = input("Enter your choice: ")
+        
+        if choice == '1':
+            name = input("Enter task name: ")
+            due_date_str = input("Enter due date (YYYY-MM-DD): ")
+            due_date = datetime.datetime.strptime(due_date_str, '%Y-%m-%d')
+            task = Task(name, due_date)
+            tasks.append(task)
+            save_tasks(tasks)
+            print("Task added successfully.")
+        
+        elif choice == '2':
+            for i, task in enumerate(tasks, start=1):
+                print(f"{i}. {task.name} - Due: {task.due_date} - {'Completed' if task.completed else 'Incomplete'}")
+            index = int(input("Enter the index of the task to mark as complete: ")) - 1
+            tasks[index].mark_complete()
+            save_tasks(tasks)
+            print("Task marked as complete.")
+        
+        elif choice == '3':
+            for i, task in enumerate(tasks, start=1):
+                print(f"{i}. {task.name} - Due: {task.due_date} - {'Completed' if task.completed else 'Incomplete'}")
+            index = int(input("Enter the index of the task to mark as incomplete: ")) - 1
+            tasks[index].mark_incomplete()
+            save_tasks(tasks)
+            print("Task marked as incomplete.")
+        
+        elif choice == '4':
+            for i, task in enumerate(tasks, start=1):
+                print(f"{i}. {task.name} - Due: {task.due_date} - {'Urgent' if task.urgent else 'Not Urgent'}")
+            index = int(input("Enter the index of the task to mark as urgent: ")) - 1
+            tasks[index].mark_urgent()
+            save_tasks(tasks)
+            print("Task marked as urgent.")
+        
+        elif choice == '5':
+            overdue_tasks = [task for task in tasks if task.is_overdue()]
+            if overdue_tasks:
+                print("Overdue Tasks:")
+                for task in overdue_tasks:
+                    print(f"- {task.name} - Due: {task.due_date}")
+            else:
+                print("No overdue tasks.")
+        
+        elif choice == '6':
+            days_before = int(input("Enter the number of days before the due date: "))
+            tasks_about_to_become_overdue = [task for task in tasks if task.is_about_to_become_overdue(days_before)]
+            if tasks_about_to_become_overdue:
+                print("Tasks About to Become Overdue:")
+                for task in tasks_about_to_become_overdue:
+                    print(f"- {task.name} - Due: {task.due_date}")
+            else:
+                print("No tasks are about to become overdue.")
+        
+        elif choice == '7':
+            print("All Tasks:")
+            for i, task in enumerate(tasks, start=1):
+                print(f"{i}. {task.name} - Due: {task.due_date} - {'Completed' if task.completed else 'Incomplete'} - {'Urgent' if task.urgent else 'Not Urgent'}")
+        
+        elif choice == '8':
+            print("Exiting...")
+            break
+        
+        else:
+            print("Invalid choice. Please enter a number from 1 to 8.")
+
+        # Check for urgent tasks about to be overdue
+        for task in tasks:
+            if task.urgent and task.is_about_to_become_overdue():
+                send_notification("URGENT TASK", f"Task '{task.name}' is about to become overdue! Due Date: {task.due_date}")
+
+        # Check for overdue tasks
+        for task in tasks:
+            if task.is_overdue():
+                send_notification("OVERDUE TASK", f"Task '{task.name}' is overdue! Due Date: {task.due_date}")
+
+        # Sleep for a few seconds before the next iteration
+        time.sleep(60)  # Check every 60 seconds
+
+if __name__ == "__main__":
+    main()
